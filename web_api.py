@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import json
 # import altair as alt
+import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 st.image('headerproject.jpg',width = 800)
 # st.altair_chart
@@ -59,7 +60,7 @@ if file1:
     st.markdown('-----------------------------------------------------------------------------------')
     st.markdown('### Select Moves')
 
-    metrics= [1,2,3,4,5,6,7,9,10, "All moves together"]
+    metrics= [1,2,3,4,5,6,7,9, "All moves together"] ### Find moves from the uploaded json as a next feature
     cols = st.selectbox('Select the move number to analyse plot',metrics )
     # st.write(f" The option to be selected is {cols}")
     moves = data['moves']
@@ -67,54 +68,66 @@ if file1:
     if cols == 'All moves together':  
         StickPositions = combine_all('StickPositions', moves)
         RedDrumPositions = combine_all('RedDrumPositions', moves)
-        bludrumposition = combine_all('BlueDrumPositions', moves)
+        BlueDrumPositions = combine_all('BlueDrumPositions', moves)
 
     else:
         StickPositions = pd.DataFrame(moves[cols]['StickPositions'])
         RedDrumPositions = pd.DataFrame(moves[cols]['RedDrumPositions'])
-        bludrumposition = pd.DataFrame(moves[cols]['BlueDrumPositions']) 
+        BlueDrumPositions = pd.DataFrame(moves[cols]['BlueDrumPositions']) 
 
 
-    bludrumposition['x'], bludrumposition['y'], bludrumposition['z'] = zip(*bludrumposition['position'].map(txtsplit))
+    BlueDrumPositions['x'], BlueDrumPositions['y'], BlueDrumPositions['z'] = zip(*BlueDrumPositions['position'].map(txtsplit))
     RedDrumPositions['x'], RedDrumPositions['y'], RedDrumPositions['z'] = zip(*RedDrumPositions['position'].map(txtsplit))
     StickPositions['x'], StickPositions['y'], StickPositions['z'] = zip(*StickPositions['position'].map(txtsplit))
 
-    bludrumposition = clean_df(time_correction(bludrumposition.reset_index(drop=True)))
+    BlueDrumPositions = clean_df(time_correction(BlueDrumPositions.reset_index(drop=True)))
     RedDrumPositions = clean_df(time_correction(RedDrumPositions.reset_index(drop=True)))
     StickPositions = clean_df(time_correction(StickPositions.reset_index(drop=True)))
-# --------------------------------------------------------------------------------------------------------------
-    plots = st.selectbox("Which graph do you want to visualise", ['Distance Plot', '2d Plot', '3d Plot'])
+# ------------------------------- Plot---------------------------------------------------------------------
+    plots = st.selectbox("Which graph do you want to visualise", ['Distance Plot', '2d Plot', '3D Heatmap'])
+# ------------------------------- Distance ---------------------------------
     if plots == 'Distance Plot' :
         df_distance = pd.DataFrame(columns=['time','distance_BD_ST', 'distance_RD_ST', 'distance_RD_BD'])
-        # asset = st.selectbox("Select the asset you want to see:",['StickPositions','RedDrumPositions','Bludrumposition'])
-        for (_,p),(_,q),(_,r) in zip(StickPositions.iterrows(), bludrumposition.iterrows(), RedDrumPositions.iterrows()):
+        # asset = st.selectbox("Select the asset you want to see:",['StickPositions','RedDrumPositions','BlueDrumPositions'])
+        for (_,p),(_,q),(_,r) in zip(StickPositions.iterrows(), BlueDrumPositions.iterrows(), RedDrumPositions.iterrows()):
         #     print (p,q,r, sep= "\n--------------\n")
             df_distance.loc[_,'time'] = StickPositions.loc[_,'corr_time']
             df_distance.loc[_,'distance_BD_ST'] = distance(tuple(p.to_list()), tuple(q.to_list()))
             df_distance.loc[_,'distance_RD_ST'] = distance(tuple(p.to_list()), tuple(r.to_list()))
             df_distance.loc[_,'distance_RD_BD'] = distance(tuple(q.to_list()), tuple(r.to_list()))
-        f,ax = plt.subplots(figsize=(18,4))
+        fig,ax = plt.subplots(figsize=(18,4))
         ax.plot(df_distance['time'],df_distance['distance_BD_ST'])
         ax.plot(df_distance['time'],df_distance['distance_RD_ST'])
         ax.plot(df_distance['time'],df_distance['distance_RD_BD'])
+        ax.set_xlabel(f'Time' )
+        ax.set_ylabel(f'Distance between two assets' )
         plt.legend(['BD & Sticks', 'RD & Sticks', 'BD & RD'])  
         plt.title('Distance betweem Assets')
-        st.pyplot(f)
-    
+        st.pyplot(fig)
+# ------------------------------- 3d ---------------------------------
+    if plots == '3D Heatmap' : 
+        asset = st.selectbox("Select the asset:",['Stick','RedDrum','BlueDrum'])
+        fig = plt.figure(figsize=(10,10))
+        ax = plt.subplot(111, projection='3d')
+        # ax.xaxis.pane.fill = False
+        # ax.xaxis.pane.set_edgecolor('white')
+        # ax.yaxis.pane.fill = False
+        # ax.yaxis.pane.set_edgecolor('white')
+        # ax.zaxis.pane.fill = False
+        # ax.zaxis.pane.set_edgecolor('white')
+        # ax.grid(False)
+        
+        # Remove z-axis
+        ax.w_zaxis.line.set_lw(0.)
+        ax.set_zticks([])
+        xyz = StickPositions.iloc[:,1:].to_numpy()
+        red = RedDrumPositions.iloc[:,1:].to_numpy()
+        blue = BlueDrumPositions.iloc[:,1:].to_numpy() 
 
-    
+        ax.scatter(xyz[:,0], xyz[:,1], xyz[:,2],c='black' ,s=4)
+        ax.scatter(blue[:,0], blue[:,1], blue[:,2],c='b' ,s=4)
+        ax.scatter(red[:,0], red[:,1], red[:,2], c='r',s=4)
 
-    # useraxis = st.multiselect("Select the axis you want to see the graph for :",['x','y','z'])
-    # st.write(f" The plot will be between the axis - {useraxis}")
-    # if len(useraxis) > 1:
-    #     if line_plot == 'StickPositions' :
-    #         st.line_chart(StickPositions[[useraxis[0],useraxis[1]]]) 
-    #     if line_plot == 'RedDrumPositions' :
-    #         st.line_chart(RedDrumPositions[[useraxis[0],useraxis[1]]]) 
-
-    #     if line_plot == 'Bludrumposition' :
-    #     #         st.line_chart(bludrumposition[['x','y']])
-    #         st.line_chart(bludrumposition[[useraxis[0],useraxis[1]]]) 
-    # elif len(useraxis) == 1 :
-    #     st.write("Enter one more axis")
-
+        ax.set_xlabel(f'x position of Sticks' )
+        ax.set_ylabel(f'y position of Sticks' )
+        st.pyplot(fig)
