@@ -84,7 +84,7 @@ if file1:
     RedDrumPositions = clean_df(time_correction(RedDrumPositions.reset_index(drop=True)))
     StickPositions = clean_df(time_correction(StickPositions.reset_index(drop=True)))
 # ------------------------------- Plot---------------------------------------------------------------------
-    plots = st.selectbox("Which graph do you want to visualise", ['Distance Plot', '2d Plot', '3D Heatmap'])
+    plots = st.selectbox("Which graph do you want to visualise", ['Distance Plot', '3D Heatmap'])
 # ------------------------------- Distance ---------------------------------
     if plots == 'Distance Plot' :
         df_distance = pd.DataFrame(columns=['time','distance_BD_ST', 'distance_RD_ST', 'distance_RD_BD'])
@@ -106,7 +106,7 @@ if file1:
         st.pyplot(fig)
 # ------------------------------- 3d ---------------------------------
     if plots == '3D Heatmap' : 
-        asset = st.selectbox("Select the asset:",['Stick','RedDrum','BlueDrum'])
+        # asset = st.selectbox("Select the asset:",['Stick','RedDrum','BlueDrum'])
         fig = plt.figure(figsize=(10,10))
         ax = plt.subplot(111, projection='3d')
         # ax.xaxis.pane.fill = False
